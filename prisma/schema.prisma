@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model MessageTemplate {
+  id        String     @id @default(cuid())
+  name      String
+  content   String
+  type      String     @default("SMS") // SMS | LMS
+  variables String     @default("[]") // JSON array of variable names
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  campaigns Campaign[]
+}
+
+model Segment {
+  id          String     @id @default(cuid())
+  name        String
+  description String     @default("")
+  filterJson  String // JSON: { operator, conditions[] }
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  campaigns   Campaign[]
+}
+
+model Campaign {
+  id           String           @id @default(cuid())
+  name         String
+  templateId   String
+  template     MessageTemplate  @relation(fields: [templateId], references: [id])
+  segmentId    String
+  segment      Segment          @relation(fields: [segmentId], references: [id])
+  status       String           @default("DRAFT") // DRAFT | SCHEDULED | SENDING | COMPLETED | FAILED
+  scheduledAt  DateTime?
+  sentAt       DateTime?
+  totalCount   Int              @default(0)
+  successCount Int              @default(0)
+  failCount    Int              @default(0)
+  createdAt    DateTime         @default(now())
+  sendLogs     SendLog[]
+}
+
+model SendLog {
+  id             String   @id @default(cuid())
+  campaignId     String
+  campaign       Campaign @relation(fields: [campaignId], references: [id])
+  recipientPhone String
+  recipientName  String   @default("")
+  status         String   @default("PENDING") // PENDING | SENT | FAILED
+  providerMsgId  String?
+  errorMessage   String?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+}
